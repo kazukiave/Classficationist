@@ -15,6 +15,8 @@ public class Classfication : MonoBehaviour
     private Setting setting;
     public TextMeshProUGUI currentCount;
     public TextMeshProUGUI totalCount;
+    public TextMeshProUGUI minuteCount;
+    public TextMeshProUGUI secondsCount;
 
     private string srcPath;
     private string destPath;
@@ -31,6 +33,10 @@ public class Classfication : MonoBehaviour
     public GameObject mainCanvas;
     public GameObject finishCanvas;
     private List<string> categorys;
+
+    private float elapsedTime = 0;
+    private int minute = 0;
+
 
     enum State
     {
@@ -49,7 +55,22 @@ public class Classfication : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-       
+        if(Input.GetKeyDown(KeyCode.Escape))
+        {
+            UnityEngine.Application.Quit();
+        }
+
+        if (currentState == State.Selected || currentState == State.Selecting)
+        {
+            elapsedTime += Time.deltaTime;
+            if (elapsedTime >= 60f)
+            {
+                minute++;
+                elapsedTime -= 60f;
+                minuteCount.GetComponentInChildren<TextMeshProUGUI>().text = minute.ToString() + "m";
+            }
+            secondsCount.GetComponentInChildren<TextMeshProUGUI>().text = Mathf.FloorToInt(elapsedTime).ToString() + "s";
+        }
 
         switch (currentState)
         {
@@ -78,7 +99,7 @@ public class Classfication : MonoBehaviour
                 finishCanvas.SetActive(true);
                 if(Input.GetKeyDown(KeyCode.Space))
                 {
-                    UnityEngine.Application.Quit(); 
+                    UnityEngine.Application.Quit();  
                 }
                 break;
         }
