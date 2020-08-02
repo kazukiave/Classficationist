@@ -6,7 +6,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-
 public class Classfication : MonoBehaviour
 {
     [Header("set")]
@@ -21,6 +20,7 @@ public class Classfication : MonoBehaviour
     private string srcPath;
     private string destPath;
     private List<string> imagePaths;
+    private string prevImagePath;
     private Texture2D imageTexture;
     private int heightMaxSize;
     private int widthMaxSize;
@@ -30,6 +30,8 @@ public class Classfication : MonoBehaviour
 
     [Header("UI")]
     public List<GameObject> buttons;
+    public GameObject prevButton;
+    public GameObject skipButton;
     public GameObject mainCanvas;
     public GameObject finishCanvas;
     private List<string> categorys;
@@ -55,22 +57,12 @@ public class Classfication : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if(Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape))
         {
             UnityEngine.Application.Quit();
         }
+        TimeCount();
 
-        if (currentState == State.Selected || currentState == State.Selecting)
-        {
-            elapsedTime += Time.deltaTime;
-            if (elapsedTime >= 60f)
-            {
-                minute++;
-                elapsedTime -= 60f;
-                minuteCount.GetComponentInChildren<TextMeshProUGUI>().text = minute.ToString() + "m";
-            }
-            secondsCount.GetComponentInChildren<TextMeshProUGUI>().text = Mathf.FloorToInt(elapsedTime).ToString() + "s";
-        }
 
         switch (currentState)
         {
@@ -81,7 +73,7 @@ public class Classfication : MonoBehaviour
                 break;
 
             case State.Selected:
-                count++;
+                
                 if (count == imagePaths.Count)
                 {
                     Debug.Log("Finish");
@@ -97,9 +89,9 @@ public class Classfication : MonoBehaviour
             case State.Finish:
                 mainCanvas.SetActive(false);
                 finishCanvas.SetActive(true);
-                if(Input.GetKeyDown(KeyCode.Space))
+                if (Input.GetKeyDown(KeyCode.Space))
                 {
-                    UnityEngine.Application.Quit();  
+                    Application.Quit();
                 }
                 break;
         }
@@ -161,8 +153,9 @@ public class Classfication : MonoBehaviour
             }
         }
 
-        //make dest folder
-
+        //add listener
+        prevButton.GetComponent<Button>().onClick.AddListener(() => Prev());
+        skipButton.GetComponent<Button>().onClick.AddListener(() => Skip());
 
         //set src image paths
         imagePaths = new List<string>();
@@ -170,6 +163,12 @@ public class Classfication : MonoBehaviour
         imagePaths.AddRange(Directory.GetFiles(srcPath, "*.png"));
         Debug.Log("Image num = " + imagePaths.Count);
         totalCount.text = imagePaths.Count.ToString();
+
+        //shuffle
+        if(setting.shuffleLoad)
+        {
+            imagePaths.Shuffle();
+        }
 
         ShowImage();
         currentState = State.Selecting;
@@ -183,6 +182,7 @@ public class Classfication : MonoBehaviour
 
         imageTexture = new Texture2D(2, 2);
         imageTexture.LoadImage(imageByte);
+        Debug.Log("texture dir " + imagePath + " width " + imageTexture.width + " height " + imageTexture.height);
 
         if (imageTexture.width > widthMaxSize)
         {
@@ -209,7 +209,10 @@ public class Classfication : MonoBehaviour
             }
         }
 
-
+        if (imageTexture.width <= widthMaxSize && imageTexture.height <= heightMaxSize)
+        {
+            image.rectTransform.sizeDelta = new Vector2(imageTexture.width, imageTexture.height);
+        }
         Sprite imageSprit = Sprite.Create(imageTexture, new Rect(0f, 0f, imageTexture.width, imageTexture.height), new Vector2(0.5f, 0.5f));
         image.sprite = imageSprit;
     }
@@ -233,7 +236,9 @@ public class Classfication : MonoBehaviour
         string fineName = Path.GetFileName(imagePaths[count]);
 
         File.Copy(imagePaths[count], Path.Combine(dir, fineName), true);
+        prevImagePath = Path.Combine(dir, fineName);
         currentState = State.Selected;
+        count++;
     }
 
     private void MakeDirectory(string path)
@@ -243,4 +248,47 @@ public class Classfication : MonoBehaviour
             Directory.CreateDirectory(path);
         }
     }
+
+    private void DeleteDirectory(string path)
+    {
+        if (!Directory.Exists(path))
+        {
+            Directory.Delete(path);
+        }
+    }
+
+    private void TimeCount()
+    {
+        if (currentState == State.Selected || currentState == State.Selecting)
+        {
+            elapsedTime += Time.deltaTime;
+            if (elapsedTime >= 60f)
+            {
+                minute++;
+                elapsedTime -= 60f;
+                minuteCount.GetComponentInChildren<TextMeshProUGUI>().text = minute.ToString() + "m";
+            }
+            secondsCount.GetComponentInChildren<TextMeshProUGUI>().text = Mathf.FloorToInt(elapsedTime).ToString() + "s";
+        }
+    }
+
+    private void Prev()
+    {
+        if (count == 0 || File.Exists(prevImagePath) == false || currentState != State.Selecting)
+            return;
+
+        count--;
+        Debug.Log(prevImagePath);
+        File.Delete(prevImagePath);
+        currentState = State.Selected;
+    }
+    private void Skip()
+    {
+        if (currentState != State.Selecting)
+            return;
+
+        count++;
+        currentState = State.Selected;
+    }
+
 }
