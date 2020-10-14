@@ -132,7 +132,7 @@ public class Classfication : MonoBehaviour
         System.Array.Sort(key, buttonsArr);
         buttons = buttonsArr.ToList();
 
-        //change button name
+        //change button name and make directory
         int idx = 0;
         for (int i = 0; i < buttons.Count; i++)
         {
@@ -152,6 +152,9 @@ public class Classfication : MonoBehaviour
                 MakeDirectory(Path.Combine(destPath, fileName));
             }
         }
+        MakeDirectory(Path.Combine(destPath, "skipped"));
+        skipButton.GetComponent<Button>().onClick.AddListener(() => CopyImage("skipped"));
+
 
         //add listener
         prevButton.GetComponent<Button>().onClick.AddListener(() => Prev());
